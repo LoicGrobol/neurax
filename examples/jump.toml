@@ -1,0 +1,11 @@
+# Example of a config file for connecting via a jump machine
+
+host = "my_remote_host"
+ssh_opts = ["-J", "jump_machine"]
+mount_root = "/home/me/mounts/my_remote_host"
+
+[dirs.home]
+remote_path = "/home/me"
+
+[dirs.data]
+remote_path = "/data/me"
