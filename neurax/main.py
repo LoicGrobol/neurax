@@ -4,14 +4,17 @@ import pathlib
 import subprocess  # nosec
 import warnings
 
-from typing import Iterable, Optional
+from typing import Iterable
 
 import click
-import click_pathlib
 import toml
 import xdg
 
 from neurax import APP_NAME
+
+
+CONFIG_ROOT = xdg.XDG_CONFIG_HOME / APP_NAME
+CONFIGS_DIR = CONFIG_ROOT / "configs"
 
 
 def socket_path(host_name: str) -> pathlib.Path:
@@ -45,7 +48,7 @@ def mount_remote(host_name: str, remote_path: str, mount_point: pathlib.Path):
         [
             "sshfs",
             "-o",
-            f'ssh_command=ssh -S {socket_path(host_name)}',
+            f"ssh_command=ssh -S {socket_path(host_name)}",
             f"{host_name}:{remote_path}",
             str(mount_point),
         ],
@@ -70,40 +73,32 @@ def connect(host_name: str, ssh_opts: Iterable[str]):
 
 
 @click.group()
-@click.option(
-    "--name",
-    "config_name",
+def cli():
+    pass
+
+
+@cli.command("list", help="List available named configs")
+def list_configs():
+    for config_file in CONFIGS_DIR.glob("*.toml"):
+        print(config_file.stem)
+
+
+@cli.command("connect", help="Connect to a remote using an existing config")
+@click.argument(
+    "config_name_or_path",
     type=str,
-    help="The name of a known config",
 )
-@click.option(
-    "--config",
-    "config_path",
-    type=click_pathlib.Path(resolve_path=True, dir_okay=False, exists=True),
-    help="A config file (in TOML format)",
-)
-@click.pass_context
-def cli(
-    ctx: click.Context, config_name: Optional[str], config_path: Optional[pathlib.Path]
-):
-    if config_path is not None:
-        config = toml.loads(config_path.read_text())
-    elif config_name is not None:
-        config_path = xdg.XDG_CONFIG_HOME / APP_NAME / "configs" / f"{config_name}.toml"
+def connect_cli(config_name_or_path: str):
+    config_path = pathlib.Path(config_name_or_path)
+    if not config_path.exists():
+        config_path = CONFIGS_DIR / f"{config_name_or_path}.toml"
         if not config_path.exists():
-            raise ValueError(f"No config for {config_name} in {config_path.parent}")
-        config = toml.loads(config_path.read_text())
-    else:
-        raise ValueError("Either --config or --name must be specified")
+            click.echo(
+                f"{config_name_or_path} is neither the path to a valid config or the name of a saved config"
+            )
+            click.Context.exit(1)
+    config = toml.loads(config_path.read_text())
 
-    ctx.ensure_object(dict)
-    ctx.obj["config"] = config
-
-
-@cli.command("connect")
-@click.pass_context
-def connect_cli(ctx: click.Context):
-    config = ctx.obj["config"]
     host_name = config["host"]
 
     if not is_alive(host_name):
@@ -118,10 +113,22 @@ def connect_cli(ctx: click.Context):
     open_shell(host_name)
 
 
-@cli.command("disconnect")
-@click.pass_context
-def disconnect_cli(ctx: click.Context):
-    config = ctx.obj["config"]
+@cli.command("disconnect", help="Disconnect from a remote and unmount its dirs")
+@click.argument(
+    "config_name_or_path",
+    type=str,
+)
+def disconnect_cli(config_name_or_path: str):
+    config_path = pathlib.Path(config_name_or_path)
+    if not config_path.exists():
+        config_path = CONFIGS_DIR / f"{config_name_or_path}.toml"
+        if not config_path.exists():
+            click.echo(
+                f"{config_name_or_path} is neither the path to a valid config or the name of a saved config"
+            )
+            click.Context.exit(1)
+    config = toml.loads(config_path.read_text())
+
     host_name = config["host"]
 
     if config.get("dirs"):
@@ -131,3 +138,30 @@ def disconnect_cli(ctx: click.Context):
             unmount(local_mount_point)
 
     disconnect(host_name)
+
+
+@cli.command(
+    "socket",
+    help="Print the path to a control socket for a given remote, initiating connection if needed",
+)
+@click.argument(
+    "config_name_or_path",
+    type=str,
+)
+def socket_cli(config_name_or_path: str):
+    config_path = pathlib.Path(config_name_or_path)
+    if not config_path.exists():
+        config_path = CONFIGS_DIR / f"{config_name_or_path}.toml"
+        if not config_path.exists():
+            click.echo(
+                f"{config_name_or_path} is neither the path to a valid config or the name of a saved config"
+            )
+            click.Context.exit(1)
+    config = toml.loads(config_path.read_text())
+
+    host_name = config["host"]
+
+    if not is_alive(host_name):
+        connect(host_name, config.get("ssh_opts", []))
+
+    print(socket_path(host_name))
