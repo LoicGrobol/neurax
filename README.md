@@ -3,9 +3,9 @@ Neurax
 
 An ssh/sshfs wrapper to improve your mind control over remote machines.
 
-- Establishes an [ssh multiplexed
+- Establish an [ssh multiplexed
   connection](https://en.wikibooks.org/wiki/OpenSSH/Cookbook/Multiplexing)
-- Uses it to mount remote directories of your choice in local path of your choices so you can access
+- Use it to mount remote directories of your choice in local path of your choices so you can access
   them as if there were on your machine
 - Open as many shells as you want
 - And more! Coming soon! I swear! Hopefully!
