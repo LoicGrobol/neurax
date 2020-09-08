@@ -1,7 +1,7 @@
-License
+Licence
 =======
 
-The following license applies to all the files in this repository.
+The following licence applies to all the files in this repository.
 
 Copyright 2020 Loïc Grobol <loic.grobol@gmail.com>
 
