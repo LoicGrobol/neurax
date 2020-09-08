@@ -30,5 +30,5 @@ pipx install neurax
 3. Connect by running `neurax connect path/to/your/config.toml` or `neurax connect some_names` if
    you followed step 2. Running this several times will open new shells through the same multiplexed
    connection, which will not close even if you exit the shell (so your mounts stay up)
-4. Disconnect by running `neurax --config path/to/your/config/file disconnect`. This closes the
-   multiplexed connection.
+4. Disconnect by running `neurax disconnect path/to/your/config/file`. This closes the
+   multiplexed connection. (Also works with a saved config name)
