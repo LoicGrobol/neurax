@@ -5,7 +5,8 @@ ssh_opts = ["-J", "jump_machine"]
 mount_root = "/home/me/mounts/my_remote_host"
 
 [dirs.home]
-remote_path = "/home/me"
+remote_expand = true  # Use bash expansion on remote host to obtain the path
+remote_path = "$HOME"
 
 [dirs.data]
 remote_path = "/data/me"

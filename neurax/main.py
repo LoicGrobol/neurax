@@ -100,6 +100,7 @@ def connect_cli(config_name_or_path: str):
     config = toml.loads(config_path.read_text())
 
     host_name = config["host"]
+    socket = socket_path(host_name)
 
     if not is_alive(host_name):
         connect(host_name, config.get("ssh_opts", []))
@@ -108,6 +109,19 @@ def connect_cli(config_name_or_path: str):
             for dir_local_name, dir_config in config["dirs"].items():
                 local_mount_point = mount_root / dir_local_name
                 remote_path = dir_config["remote_path"]
+                if dir_config.get("remote_expand"):
+                    remote_path = subprocess.run(
+                        [
+                            "ssh",
+                            "-S",
+                            str(socket),
+                            host_name,
+                            f'bash -l -c "echo \\"{remote_path}\\""',
+                        ],
+                        capture_output=True,
+                        check=True,
+                        text=True,
+                    ).stdout.strip()
                 mount_remote(host_name, remote_path, local_mount_point)
 
     open_shell(host_name)
